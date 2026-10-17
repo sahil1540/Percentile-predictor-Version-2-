@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>cutoffpredictor.site | MHT-CET Percentile Calculator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --page: #f4f7fc;
+      --surface: #ffffff;
+      --ink: #15213b;
+      --muted: #69758b;
+      --primary: #315cf5;
+      --primary-dark: #2446d8;
+      --accent: #19b7a0;
+      --line: #e2e8f3;
+      --soft: #eef2ff;
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--page);
+      color: var(--ink);
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      min-height: 76px;
+      padding: 18px 7%;
+      background: #101a33;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      z-index: 10;
+      box-shadow: 0 8px 28px rgba(16, 26, 51, 0.12);
+    }
+
+    .logo {
+      font-size: clamp(21px, 2.4vw, 26px);
+      font-weight: 850;
+      letter-spacing: -1px;
+    }
+
+    .logo span { color: #70a0ff; }
+
+    .hero {
+      min-height: calc(100vh - 76px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 66px 20px 76px;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 370px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(91, 132, 255, 0.16), transparent 70%);
+      pointer-events: none;
+    }
+
+    .badge {
+      background: #e6edff;
+      color: #3152c9;
+      padding: 9px 15px;
+      border: 1px solid #d3dfff;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.4px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 6vw, 68px);
+      letter-spacing: -3.5px;
+      line-height: 1.06;
+      margin-bottom: 18px;
+      font-weight: 850;
+    }
+
+    .hero h1 span { color: var(--primary); }
+
+    .hero > p {
+      color: var(--muted);
+      max-width: 550px;
+      line-height: 1.75;
+      margin-bottom: 34px;
+      font-size: 15px;
+    }
+
+    .calculator {
+      width: min(100%, 490px);
+      background: var(--surface);
+      border: 1px solid rgba(218, 226, 241, 0.9);
+      border-radius: 25px;
+      padding: 30px;
+      box-shadow: 0 24px 70px rgba(32, 55, 105, 0.11), 0 3px 10px rgba(32, 55, 105, 0.04);
+      text-align: left;
+      position: relative;
+      z-index: 2;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 10px;
+      color: #35415b;
+      letter-spacing: 0.35px;
+    }
+
+    .group-selector, .selector {
+      display: grid;
+      gap: 8px;
+      background: #f2f5fb;
+      padding: 5px;
+      border: 1px solid #e9eef7;
+      border-radius: 13px;
+      margin-bottom: 23px;
+    }
+
+    .group-selector { grid-template-columns: 1fr 1fr; }
+    .selector { grid-template-columns: repeat(3, 1fr); }
+
+    .group-selector button, .selector button {
+      border: 1px solid transparent;
+      background: transparent;
+      padding: 12px 6px;
+      border-radius: 9px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      color: #77839a;
+      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .group-selector button:hover, .selector button:hover {
+      color: var(--primary);
+      background: #e7edff;
+    }
+
+    .group-selector button.active, .selector button.active {
+      background: #fff;
+      color: var(--primary);
+      border-color: #dce5ff;
+      box-shadow: 0 3px 9px rgba(42, 75, 165, 0.09);
+    }
+
+    .input-box {
+      height: 60px;
+      border: 1.5px solid #dfe6f2;
+      background: #fbfcff;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      padding: 0 17px;
+      margin-bottom: 17px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .input-box:focus-within {
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(49, 92, 245, 0.11);
+    }
+
+    .input-box input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      font: inherit;
+      font-size: 21px;
+      font-weight: 750;
+      color: var(--ink);
+      background: transparent;
+      min-width: 0;
+    }
+
+    .input-box input::placeholder { color: #b5bfd0; }
+    .input-box span { color: #8793a8; font-size: 13px; font-weight: 750; white-space: nowrap; }
+
+    .calculate-btn {
+      width: 100%;
+      min-height: 56px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #416bff, #3152e8);
+      color: white;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 9px 20px rgba(49, 92, 245, 0.22);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    .calculate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 13px 25px rgba(49, 92, 245, 0.28);
+      filter: brightness(1.04);
+    }
+
+    .calculate-btn:active { transform: translateY(0); }
+    .calculate-btn:focus-visible, .reset-btn:focus-visible, button:focus-visible { outline: 3px solid #9eb5ff; outline-offset: 3px; }
+
+    #error {
+      color: #d33f55;
+      font-size: 12px;
+      text-align: center;
+      min-height: 18px;
+      margin-top: 11px;
+    }
+
+    .result {
+      display: none;
+      margin-top: 20px;
+      padding: 23px;
+      border: 1px solid #e0e8ff;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #f5f7ff, #f0fbfa);
+      text-align: center;
+    }
+
+    .result.show { display: block; animation: result-in 0.35s ease both; }
+
+    @keyframes result-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-label { color: var(--muted); font-size: 12px; font-weight: 750; margin-bottom: 7px; }
+    .result h2 { font-size: clamp(38px, 8vw, 48px); letter-spacing: -2px; margin-bottom: 5px; color: var(--primary); font-weight: 850; }
+    #result-text { color: var(--muted); font-size: 12px; margin-bottom: 17px; }
+
+    .progress-container {
+      height: 9px;
+      background: #dce4f5;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #315cf5, #20b8a2);
+      border-radius: 20px;
+      transition: width 0.8s ease;
+    }
+
+    .result-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
+    .result-info div {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e5ebf6;
+      padding: 12px 5px;
+      border-radius: 11px;
+      min-width: 0;
+    }
+
+    .result-info small { display: block; color: #8793a8; font-size: 10px; margin-bottom: 5px; }
+    .result-info strong { font-size: 12px; overflow-wrap: anywhere; }
+
+    .reset-btn {
+      display: block;
+      margin: 15px auto 0;
+      padding: 5px 10px;
+      border: none;
+      background: transparent;
+      color: #77839a;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      transition: color 0.2s ease;
+    }
+
+    .reset-btn:hover { color: var(--primary); }
+
+    .info {
+      background: #101a33;
+      color: white;
+      padding: 62px 7%;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 20px;
+    }
+
+    .info-card {
+      padding: 27px;
+      border: 1px solid rgba(164, 184, 230, 0.19);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.035);
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-4px);
+      background: rgba(255, 255, 255, 0.065);
+      border-color: rgba(112, 160, 255, 0.45);
+    }
+
+    .icon {
+      width: 39px;
+      height: 39px;
+      background: #dfe8ff;
+      color: #3152c9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 11px;
+      font-size: 11px;
+      font-weight: 850;
+      margin-bottom: 18px;
+    }
+
+    .info-card h3 { margin-bottom: 10px; font-size: 16px; letter-spacing: -0.2px; }
+    .info-card p { color: #b1bdd4; font-size: 13px; line-height: 1.75; }
+
+    footer {
+      background: #0b1328;
+      border-top: 1px solid rgba(164, 184, 230, 0.12);
+      color: #98a5bf;
+      padding: 22px 7%;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 700px) {
+      header { min-height: 68px; }
+      .hero { padding: 45px 16px 54px; }
+      .hero h1 { letter-spacing: -2px; }
+      .hero > p { font-size: 14px; margin-bottom: 27px; }
+      .calculator { padding: 22px 18px; border-radius: 21px; }
+      .info { grid-template-columns: 1fr; padding: 42px 16px; gap: 13px; }
+      .info-card { padding: 22px; }
+      footer { flex-direction: column; gap: 7px; text-align: center; padding: 20px 16px; }
+    }
+
+    @media (max-width: 380px) {
+      .hero h1 { font-size: 35px; }
+      .calculator { padding: 18px 14px; }
+      .result { padding: 17px 12px; }
+      .result-info { gap: 5px; }
+      .result-info strong { font-size: 11px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    }
+
+
+    /* Extra CSS-only motion: JavaScript remains untouched. */
+    body {
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(49, 92, 245, 0.09), transparent 28rem),
+        radial-gradient(circle at 88% 45%, rgba(25, 183, 160, 0.08), transparent 25rem);
+      background-attachment: fixed;
+    }
+
+    header {
+      animation: headerDrop 700ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .logo {
+      transition: letter-spacing 250ms ease, transform 250ms ease;
+    }
+
+    .logo:hover {
+      letter-spacing: .4px;
+      transform: translateY(-1px);
+    }
+
+    .hero > * {
+      animation: riseIn 700ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .hero .badge { animation-delay: 80ms; }
+    .hero h1 { animation-delay: 150ms; }
+    .hero > p { animation-delay: 220ms; }
+    .hero .calculator { animation-delay: 300ms; }
+
+    .badge {
+      box-shadow: 0 0 0 0 rgba(49, 92, 245, .16);
+      animation: badgePulse 3.2s ease-in-out 1s infinite;
+    }
+
+    .calculator {
+      transition: transform 300ms ease, box-shadow 300ms ease;
+      animation: riseIn 750ms cubic-bezier(.2,.8,.2,1) 300ms both;
+    }
+
+    .calculator:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 28px 70px rgba(25, 43, 89, .14);
+    }
+
+    .group-selector button,
+    .selector button {
+      position: relative;
+      overflow: hidden;
+      transition: color 220ms ease, background 220ms ease, transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .group-selector button:hover,
+    .selector button:hover {
+      transform: translateY(-2px);
+      color: var(--primary);
+    }
+
+    .group-selector button.active,
+    .selector button.active {
+      animation: selectPop 260ms ease-out both;
+    }
+
+    .input-box {
+      transition: border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+    }
+
+    .input-box:focus-within {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 4px rgba(49, 92, 245, .12), 0 8px 20px rgba(49, 92, 245, .07);
+    }
+
+    .calculate-btn {
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      transition: transform 220ms ease, box-shadow 220ms ease, filter 220ms ease;
+    }
+
+    .calculate-btn::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: -60%;
+      left: -75%;
+      width: 45%;
+      height: 220%;
+      transform: rotate(22deg);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.34), transparent);
+      transition: left 600ms ease;
+    }
+
+    .calculate-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 25px rgba(49, 92, 245, .25);
+      filter: saturate(1.12);
+    }
+
+    .calculate-btn:hover::before { left: 135%; }
+    .calculate-btn:active { transform: translateY(0) scale(.985); }
+
+    .result.show {
+      animation: resultReveal 500ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .result.show h2 {
+      animation: numberPop 550ms cubic-bezier(.2,.8,.2,1) 100ms both;
+    }
+
+    .progress-bar {
+      background-image: linear-gradient(100deg, var(--primary), #537cff 45%, var(--accent));
+      background-size: 200% 100%;
+      animation: progressShimmer 3s linear infinite;
+    }
+
+    .result-info div {
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+
+    .result-info div:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 18px rgba(25, 43, 89, .09);
+    }
+
+    .reset-btn { transition: color 200ms ease, transform 200ms ease; }
+    .reset-btn:hover { color: var(--primary); transform: translateY(-1px); }
+
+    .info-card {
+      transition: transform 280ms ease, border-color 280ms ease, background 280ms ease, box-shadow 280ms ease;
+      animation: riseIn 650ms cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .info-card:nth-child(2) { animation-delay: 120ms; }
+    .info-card:nth-child(3) { animation-delay: 240ms; }
+
+    .info-card:hover {
+      transform: translateY(-7px);
+      border-color: rgba(111, 145, 255, .6);
+      background: #172442;
+      box-shadow: 0 18px 35px rgba(0, 0, 0, .16);
+    }
+
+    .info-card .icon { transition: transform 250ms ease, border-radius 250ms ease; }
+    .info-card:hover .icon { transform: rotate(-6deg) scale(1.08); border-radius: 12px; }
+
+    footer p { transition: color 200ms ease; }
+    footer p:hover { color: #c4cde0; }
+
+    @keyframes headerDrop {
+      from { opacity: 0; transform: translateY(-14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes badgePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(49, 92, 245, 0); }
+      50% { box-shadow: 0 0 0 7px rgba(49, 92, 245, .07); }
+    }
+
+    @keyframes selectPop {
+      0% { transform: scale(.96); }
+      65% { transform: scale(1.035); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes resultReveal {
+      from { opacity: 0; transform: translateY(12px) scale(.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @keyframes numberPop {
+      0% { opacity: 0; transform: scale(.88); }
+      70% { opacity: 1; transform: scale(1.045); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes progressShimmer {
+      from { background-position: 100% 0; }
+      to { background-position: -100% 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
+    }
+
+
+
+    /* Aurora theme + extra CSS-only animations. JavaScript intentionally untouched. */
+    :root {
+      --page: #f8f5ff;
+      --surface: rgba(255, 255, 255, 0.94);
+      --ink: #21143f;
+      --muted: #766b91;
+      --primary: #7c3aed;
+      --primary-dark: #5b21b6;
+      --accent: #06b6d4;
+      --line: #e8ddff;
+      --soft: #f3e8ff;
+    }
+
+    body {
+      background-color: var(--page);
+      background-image:
+        radial-gradient(ellipse at 12% 12%, rgba(192, 132, 252, .24), transparent 31rem),
+        radial-gradient(ellipse at 90% 35%, rgba(34, 211, 238, .18), transparent 28rem),
+        linear-gradient(135deg, #fbf7ff 0%, #f3f6ff 48%, #effcff 100%);
+      background-size: 150% 150%;
+      animation: auroraDrift 16s ease-in-out infinite alternate;
+    }
+
+    header {
+      background: linear-gradient(110deg, #1e103e, #31205f 55%, #143b58);
+      box-shadow: 0 10px 34px rgba(67, 34, 120, .24);
+      overflow: hidden;
+    }
+
+    header::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,.10) 48%, transparent 72%);
+      transform: translateX(-120%);
+      animation: headerGleam 8s ease-in-out 1.2s infinite;
+    }
+
+    .logo span {
+      background: linear-gradient(90deg, #c4b5fd, #67e8f9, #f0abfc, #c4b5fd);
+      background-size: 250% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: colorFlow 5s linear infinite;
+    }
+
+    .hero::before {
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(168, 85, 247, .19), transparent 68%),
+        radial-gradient(ellipse at 8% 38%, rgba(34, 211, 238, .11), transparent 42%);
+      animation: glowBreathe 7s ease-in-out infinite alternate;
+    }
+
+    .badge {
+      color: #6d28d9;
+      background: linear-gradient(120deg, #f3e8ff, #e0f7ff, #fce7f3);
+      border-color: rgba(167, 139, 250, .45);
+      box-shadow: 0 8px 24px rgba(124, 58, 237, .10);
+      animation: badgePulse 3.2s ease-in-out 1s infinite, badgeHue 8s linear infinite;
+    }
+
+    .hero h1 span {
+      display: inline-block;
+      background: linear-gradient(115deg, #7c3aed, #db2777, #0891b2, #7c3aed);
+      background-size: 250% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: colorFlow 6s linear infinite, arrowFloat 3s ease-in-out infinite;
+    }
+
+    .calculator {
+      border-color: rgba(196, 181, 253, .65);
+      background: linear-gradient(145deg, rgba(255,255,255,.98), rgba(250,247,255,.96));
+      box-shadow: 0 24px 70px rgba(91, 33, 182, .12), 0 4px 16px rgba(8, 145, 178, .06);
+    }
+
+    .calculator::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      padding: 1px;
+      border-radius: inherit;
+      background: linear-gradient(130deg, rgba(167,139,250,.8), transparent 35%, rgba(34,211,238,.65), transparent 75%, rgba(244,114,182,.6));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+      opacity: .55;
+      animation: borderGlow 7s linear infinite;
+    }
+
+    .section-title { color: #493568; }
+    .group-selector, .selector {
+      background: #f4efff;
+      border-color: #e9ddff;
+    }
+
+    .group-selector button.active, .selector button.active {
+      color: #fff;
+      border-color: transparent;
+      background: linear-gradient(115deg, #7c3aed, #a855f7 58%, #0891b2);
+      background-size: 180% 180%;
+      box-shadow: 0 6px 16px rgba(124, 58, 237, .23);
+      animation: selectPop 260ms ease-out both, activeGradient 5s ease infinite;
+    }
+
+    .group-selector button:hover, .selector button:hover {
+      color: #6d28d9;
+      background: #ede4ff;
+    }
+
+    .input-box {
+      background: #fdfbff;
+      border-color: #e5d9fb;
+    }
+
+    .input-box:focus-within {
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, .13), 0 9px 23px rgba(8, 145, 178, .08);
+    }
+
+    .calculate-btn {
+      background: linear-gradient(110deg, #7c3aed, #a21caf 48%, #0891b2);
+      background-size: 200% 200%;
+      box-shadow: 0 10px 24px rgba(124, 58, 237, .25);
+      animation: buttonGradient 7s ease infinite;
+    }
+
+    .calculate-btn:hover {
+      box-shadow: 0 15px 30px rgba(124, 58, 237, .30);
+    }
+
+    #error { color: #be185d; }
+
+    .result {
+      border-color: #e9d5ff;
+      background: linear-gradient(135deg, #f5edff, #e9fbff 55%, #fff1f8);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.85);
+    }
+
+    .result h2 {
+      background: linear-gradient(100deg, #7c3aed, #c026d3 48%, #0891b2);
+      background-size: 200% auto;
+      color: transparent;
+      -webkit-background-clip: text;
+      background-clip: text;
+      animation: colorFlow 5s linear infinite, numberPop 550ms cubic-bezier(.2,.8,.2,1) 100ms both;
+    }
+
+    .progress-container { background: #e4d9f8; }
+    .progress-bar {
+      background-image: linear-gradient(90deg, #7c3aed, #d946ef, #06b6d4, #34d399);
+      background-size: 250% 100%;
+      box-shadow: 0 0 13px rgba(6, 182, 212, .25);
+      animation: progressShimmer 3s linear infinite, progressGlow 2.4s ease-in-out infinite alternate;
+    }
+
+    .result-info div {
+      border-color: #eadfff;
+      box-shadow: 0 3px 10px rgba(124, 58, 237, .035);
+    }
+
+    .result-info div:hover {
+      border-color: #c4b5fd;
+      box-shadow: 0 9px 22px rgba(124, 58, 237, .12);
+    }
+
+    .reset-btn:hover { color: #a21caf; }
+
+    .info {
+      background: linear-gradient(120deg, #1e103e, #252054 48%, #10374d);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .info::before {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      top: -190px;
+      left: calc(50% - 170px);
+      border-radius: 50%;
+      border: 1px solid rgba(196, 181, 253, .17);
+      box-shadow: 0 0 0 28px rgba(196, 181, 253, .025), 0 0 0 58px rgba(103, 232, 249, .025);
+      animation: orbitPulse 8s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    .info-card {
+      position: relative;
+      z-index: 1;
+      border-color: rgba(196, 181, 253, .22);
+      background: linear-gradient(145deg, rgba(255,255,255,.07), rgba(255,255,255,.025));
+      backdrop-filter: blur(7px);
+    }
+
+    .info-card .icon {
+      color: #fff;
+      background: linear-gradient(135deg, #8b5cf6, #d946ef 55%, #06b6d4);
+      box-shadow: 0 8px 20px rgba(139, 92, 246, .24);
+    }
+
+    .info-card:hover .icon { box-shadow: 0 10px 26px rgba(6, 182, 212, .25); }
+
+    footer {
+      background: #160d2c;
+      border-top-color: rgba(196, 181, 253, .16);
+    }
+
+    @keyframes auroraDrift {
+      0% { background-position: 0% 0%, 100% 30%, 0% 50%; }
+      100% { background-position: 18% 20%, 82% 60%, 100% 50%; }
+    }
+    @keyframes headerGleam {
+      0%, 65%, 100% { transform: translateX(-120%); }
+      35% { transform: translateX(120%); }
+    }
+    @keyframes colorFlow { to { background-position: 250% center; } }
+    @keyframes glowBreathe { from { opacity: .65; transform: scale(1); } to { opacity: 1; transform: scale(1.04); } }
+    @keyframes badgeHue { 0%, 100% { filter: hue-rotate(0deg); } 50% { filter: hue-rotate(22deg); } }
+    @keyframes arrowFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+    @keyframes borderGlow { 0%, 100% { opacity: .35; } 50% { opacity: .85; } }
+    @keyframes activeGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    @keyframes buttonGradient { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+    @keyframes progressGlow { from { filter: saturate(1); } to { filter: saturate(1.35) brightness(1.05); } }
+    @keyframes orbitPulse { from { transform: scale(.92) rotate(-8deg); opacity: .55; } to { transform: scale(1.08) rotate(8deg); opacity: 1; } }
+
+    @media (prefers-reduced-motion: reduce) {
+      body, header::after, .logo span, .hero h1 span, .calculator::before, .info::before {
+        animation: none !important;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">cutoffpredictor<span>.site</span></div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="badge">MHT-CET 2026</div>
+      <h1>Marks <span>→</span> Percentile</h1>
+      <p>Enter your MHT-CET marks, select your difficulty level, and get an estimated percentile instantly.</p>
+
+      <div class="calculator">
+        <div class="section-title">Select Group</div>
+        <div class="group-selector">
+          <button class="group active" onclick="selectGroup('PCM', this)">PCM</button>
+          <button class="group" onclick="selectGroup('PCB', this)">PCB</button>
+        </div>
+
+        <div class="section-title">Select Difficulty Level</div>
+        <div class="selector">
+          <button class="difficulty active" onclick="selectDifficulty('Easy', this)">Easy</button>
+          <button class="difficulty" onclick="selectDifficulty('Medium', this)">Medium</button>
+          <button class="difficulty" onclick="selectDifficulty('Hard', this)">Hard</button>
+        </div>
+
+        <div class="section-title">Enter your marks</div>
+        <div class="input-box">
+          <input type="number" id="marks" placeholder="e.g. 145" min="0" max="200">
+          <span>/ 200</span>
+        </div>
+
+        <button class="calculate-btn" onclick="calculatePercentile()">Calculate Percentile →</button>
+        <p id="error"></p>
+
+        <div class="result" id="result">
+          <p class="result-label">Estimated Percentile</p>
+          <h2 id="percentile">--</h2>
+          <p id="result-text"></p>
+          <div class="progress-container">
+            <div class="progress-bar" id="progress"></div>
+          </div>
+          <div class="result-info">
+            <div>
+              <small>Marks</small>
+              <strong id="result-marks">--</strong>
+            </div>
+            <div>
+              <small>Group</small>
+              <strong id="result-group">PCM</strong>
+            </div>
+            <div>
+              <small>Difficulty</small>
+              <strong id="result-difficulty">Easy</strong>
+            </div>
+          </div>
+        </div>
+
+        <button class="reset-btn" onclick="resetCalculator()">Reset</button>
+      </div>
+    </section>
+
+    <section class="info">
+      <div class="info-card">
+        <div class="icon">01</div>
+        <h3>Enter Marks</h3>
+        <p>Enter your MHT-CET raw score out of 200.</p>
+      </div>
+      <div class="info-card">
+        <div class="icon">02</div>
+        <h3>Select Difficulty</h3>
+        <p>Choose Easy, Medium, or Hard based on your shift difficulty.</p>
+      </div>
+      <div class="info-card">
+        <div class="icon">03</div>
+        <h3>Get Percentile</h3>
+        <p>Get a dynamic estimated percentile calculated on normalization trends.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 cutoffpredictor.site</p>
+    <p>Percentile shown is an estimate based on trends.</p>
+  </footer>
+
+  <script>
+    let selectedGroup = "PCM";
+    let selectedDifficulty = "Easy";
+
+    function selectGroup(group, button) {
+      selectedGroup = group;
+      document.querySelectorAll(".group").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+      document.getElementById("result").classList.remove("show");
+      document.getElementById("error").textContent = "";
+    }
+
+    function selectDifficulty(difficulty, button) {
+      selectedDifficulty = difficulty;
+      document.querySelectorAll(".difficulty").forEach(item => item.classList.remove("active"));
+      button.classList.add("active");
+      document.getElementById("result").classList.remove("show");
+    }
+
+    // Dynamic Normalization Table (Linear Interpolation)
+    const benchmarks = [
+      { marks: 200, pcm: 100.00, pcb: 100.00 },
+      { marks: 180, pcm: 99.85,  pcb: 99.90 },
+      { marks: 160, pcm: 99.10,  pcb: 99.25 },
+      { marks: 140, pcm: 97.60,  pcb: 97.90 },
+      { marks: 120, pcm: 95.20,  pcb: 95.50 },
+      { marks: 100, pcm: 90.50,  pcb: 91.00 },
+      { marks: 80,  pcm: 82.00,  pcb: 83.00 },
+      { marks: 60,  pcm: 68.00,  pcb: 70.00 },
+      { marks: 40,  pcm: 48.00,  pcb: 50.00 },
+      { marks: 20,  pcm: 24.00,  pcb: 26.00 },
+      { marks: 0,   pcm: 0.00,   pcb: 0.00 }
+    ];
+
+    function calculatePercentile() {
+      const marksInput = document.getElementById("marks");
+      const marks = Number(marksInput.value);
+      const error = document.getElementById("error");
+      const result = document.getElementById("result");
+
+      if (marksInput.value.trim() === "") {
+        error.textContent = "Please enter your marks.";
+        result.classList.remove("show");
+        return;
+      }
+
+      if (isNaN(marks) || marks < 0 || marks > 200) {
+        error.textContent = "Marks must be between 0 and 200.";
+        result.classList.remove("show");
+        return;
+      }
+
+      error.textContent = "";
+
+      // Linear Interpolation Calculation
+      let calculatedPercentile = 0;
+      for (let i = 0; i < benchmarks.length - 1; i++) {
+        const high = benchmarks[i];
+        const low = benchmarks[i + 1];
+
+        if (marks <= high.marks && marks >= low.marks) {
+          const key = selectedGroup.toLowerCase();
+          const marksRatio = (marks - low.marks) / (high.marks - low.marks);
+          calculatedPercentile = low[key] + marksRatio * (high[key] - low[key]);
+          break;
+        }
+      }
+
+      // Difficulty shift adjustments
+      if (selectedDifficulty === "Easy") {
+        calculatedPercentile -= (calculatedPercentile > 90 ? 0.35 : 1.2);
+      } else if (selectedDifficulty === "Hard") {
+        calculatedPercentile += (calculatedPercentile > 90 ? 0.45 : 1.5);
+      }
+
+      // Range Clamp
+      if (calculatedPercentile > 100) calculatedPercentile = 100;
+      if (calculatedPercentile < 0) calculatedPercentile = 0;
+
+      // Update UI
+      document.getElementById("percentile").textContent = calculatedPercentile.toFixed(2);
+      document.getElementById("result-marks").textContent = marks + " / 200";
+      document.getElementById("result-group").textContent = selectedGroup;
+      document.getElementById("result-difficulty").textContent = selectedDifficulty;
+      document.getElementById("result-text").textContent = "Estimated " + selectedGroup + " percentile (" + selectedDifficulty + " Shift)";
+      
+      result.classList.add("show");
+      
+      setTimeout(function() {
+        document.getElementById("progress").style.width = calculatedPercentile + "%";
+      }, 50);
+    }
+
+    function resetCalculator() {
+      document.getElementById("marks").value = "";
+      document.getElementById("error").textContent = "";
+      document.getElementById("result").classList.remove("show");
+      document.getElementById("progress").style.width = "0%";
+    }
+  </script>
+</body>
+</html>
